@@ -4,6 +4,19 @@ go:
   - 1.8.x
   - tip
 
+# to build ebiten
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - libglew-dev
+      - libgles2-mesa-dev
+      - libopenal-dev
+      - libalut-dev
+      - libxxf86vm-dev
+      - libxrandr-dev
+
 before_install:
   - go get -t -v ./...
 

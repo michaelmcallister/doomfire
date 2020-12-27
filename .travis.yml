@@ -10,18 +10,21 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - libglew-dev
-      - libgles2-mesa-dev
-      - libopenal-dev
-      - libalut-dev
-      - libxxf86vm-dev
+      - gcc
+      - libc6-dev
+      - libglu1-mesa-dev
+      - libgl1-mesa-dev
+      - libxcursor-dev
+      - libxi-dev
+      - libxinerama-dev
       - libxrandr-dev
+      - libxxf86vm-dev
+      - libasound2-dev
+      - pkg-config
 
 before_install:
   - go get -t -v ./...
+  - go get github.com/mattn/goveralls
 
 script:
-  - go test -race -coverprofile=coverage.txt -covermode=atomic
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
+  - $GOPATH/bin/goveralls -service=travis-ci

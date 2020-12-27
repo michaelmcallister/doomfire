@@ -68,7 +68,7 @@ func NewDoom(width, height int) *Doom {
 
 	// Set bottom line to 37 (color white: 0xFF,0xFF,0xFF)
 	for i := 0; i < d.width; i++ {
-		d.firePixels[(d.height-1)*d.width+i] = 36
+		d.firePixels[(d.height-1)*d.width+i] = len(rgb) - 1
 	}
 	return d
 }
@@ -101,17 +101,17 @@ func (d *Doom) Update(screen *ebiten.Image) error {
 
 // Draw plots the current fire framebuffer.
 func (d *Doom) Draw(screen *ebiten.Image) {
-	for x := 0; x < d.width; x++ {
-		d.waitGroup.Add(1)
-		go func(x int) {
-			defer d.waitGroup.Done()
-			for y := 0; y < d.height; y++ {
-				c := d.firePixels[y*d.width+x]
-				screen.Set(x, y, rgb[c])
-			}
-		}(x)
+	pix := make([]byte, d.width*d.height*4)
+	l := d.width * d.height
+	for i := 0; i < l; i++ {
+		c := d.firePixels[i]
+		r, g, b, a := rgb[c].RGBA()
+		pix[4*i] = byte(r)
+		pix[4*i+1] = byte(g)
+		pix[4*i+2] = byte(b)
+		pix[4*i+3] = byte(a)
 	}
-	d.waitGroup.Wait()
+	screen.ReplacePixels(pix)
 }
 
 // Layout takes the outside size (e.g., the window size) and returns the (logical) screen size.

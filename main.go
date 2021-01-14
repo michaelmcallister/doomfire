@@ -1,9 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"image/color"
 	"math/rand"
+	"os"
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -53,6 +55,11 @@ var rgb = []color.RGBA{
 	{0xFF, 0xFF, 0xFF, 0xFF},
 }
 
+var (
+	widthFlag  = flag.Int("width", 600, "width (in pixels)")
+	heightFlag = flag.Int("height", 400, "height (in pixels)")
+)
+
 // Doom implements the ebiten.Game interface.
 type Doom struct {
 	width, height int
@@ -87,7 +94,10 @@ func (d *Doom) spreadFire(src int) {
 	}
 	randIdx := rand.Intn(3)
 	dst := src - randIdx + 1
-	d.firePixels[dst-d.width] = pixel - (randIdx & 1)
+	i := dst - d.width
+	if i > 0 {
+		d.firePixels[i] = pixel - (randIdx & 1)
+	}
 }
 
 // Update applies the fire spread on each frame.
@@ -106,6 +116,15 @@ func (d *Doom) Update() error {
 	if inpututil.IsKeyJustPressed(ebiten.KeyD) {
 		d.printDebug = !d.printDebug
 	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+		ebiten.SetFullscreen(!ebiten.IsFullscreen())
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+		os.Exit(0)
+	}
+
 	return nil
 }
 
@@ -123,7 +142,7 @@ func (d *Doom) Draw(scr *ebiten.Image) {
 	scr.ReplacePixels(d.screenBuffer)
 
 	if d.printDebug {
-		ebitenutil.DebugPrint(scr, fmt.Sprintf("FPS: %f\n", ebiten.CurrentFPS()))
+		ebitenutil.DebugPrint(scr, fmt.Sprintf("TPS: %0.2f", ebiten.CurrentTPS()))
 	}
 }
 
@@ -133,9 +152,11 @@ func (d *Doom) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
+	flag.Parse()
 	ebiten.SetWindowTitle("DOOM")
 	ebiten.SetMaxTPS(ebiten.UncappedTPS)
-	d := NewDoom(600, 400)
+	ebiten.SetWindowSize(*widthFlag*2, *heightFlag*2)
+	d := NewDoom(*widthFlag, *heightFlag)
 
 	if err := ebiten.RunGame(d); err != nil {
 		panic(err)

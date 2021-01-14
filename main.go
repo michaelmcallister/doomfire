@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"image/color"
 	"math/rand"
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 // rgb is the colour palette to use for the Fire.
@@ -54,13 +57,16 @@ var rgb = []color.RGBA{
 type Doom struct {
 	width, height int
 	firePixels    []int
+	screenBuffer  []byte
 	waitGroup     sync.WaitGroup
+	printDebug    bool
 }
 
 // NewDoom creates a new instance of Doom
 func NewDoom(width, height int) *Doom {
 	d := &Doom{width: width, height: height}
 	d.firePixels = make([]int, d.width*d.height)
+	d.screenBuffer = make([]byte, d.width*d.height*4)
 	// Set whole screen to 0 (color: 0x07,0x07,0x07)
 	for i := 0; i < d.width*d.height; i++ {
 		d.firePixels[i] = 0
@@ -96,22 +102,29 @@ func (d *Doom) Update() error {
 		}(x)
 	}
 	d.waitGroup.Wait()
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyD) {
+		d.printDebug = !d.printDebug
+	}
 	return nil
 }
 
 // Draw plots the current fire framebuffer.
-func (d *Doom) Draw(screen *ebiten.Image) {
-	pix := make([]byte, d.width*d.height*4)
+func (d *Doom) Draw(scr *ebiten.Image) {
 	l := d.width * d.height
 	for i := 0; i < l; i++ {
 		c := d.firePixels[i]
 		r, g, b, a := rgb[c].RGBA()
-		pix[4*i] = byte(r)
-		pix[4*i+1] = byte(g)
-		pix[4*i+2] = byte(b)
-		pix[4*i+3] = byte(a)
+		d.screenBuffer[4*i] = byte(r)
+		d.screenBuffer[4*i+1] = byte(g)
+		d.screenBuffer[4*i+2] = byte(b)
+		d.screenBuffer[4*i+3] = byte(a)
 	}
-	screen.ReplacePixels(pix)
+	scr.ReplacePixels(d.screenBuffer)
+
+	if d.printDebug {
+		ebitenutil.DebugPrint(scr, fmt.Sprintf("FPS: %f\n", ebiten.CurrentFPS()))
+	}
 }
 
 // Layout takes the outside size (e.g., the window size) and returns the (logical) screen size.

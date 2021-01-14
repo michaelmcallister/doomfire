@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"sync"
 
-	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // rgb is the colour palette to use for the Fire.
@@ -85,7 +85,7 @@ func (d *Doom) spreadFire(src int) {
 }
 
 // Update applies the fire spread on each frame.
-func (d *Doom) Update(screen *ebiten.Image) error {
+func (d *Doom) Update() error {
 	for x := 0; x < d.width; x++ {
 		d.waitGroup.Add(1)
 		go func(x int) {

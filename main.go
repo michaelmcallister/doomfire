@@ -1,11 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"image/color"
 	"math/rand"
-	"sync"
 
-	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 // rgb is the colour palette to use for the Fire.
@@ -54,7 +55,7 @@ var rgb = []color.RGBA{
 type Doom struct {
 	width, height int
 	firePixels    []int
-	waitGroup     sync.WaitGroup
+	buffer        []byte
 }
 
 // NewDoom creates a new instance of Doom
@@ -85,33 +86,27 @@ func (d *Doom) spreadFire(src int) {
 }
 
 // Update applies the fire spread on each frame.
-func (d *Doom) Update(screen *ebiten.Image) error {
+func (d *Doom) Update() error {
+	d.buffer = make([]byte, d.width*d.height*4)
 	for x := 0; x < d.width; x++ {
-		d.waitGroup.Add(1)
-		go func(x int) {
-			defer d.waitGroup.Done()
-			for y := 1; y < d.height; y++ {
-				d.spreadFire(y*d.width + x)
-			}
-		}(x)
+		for y := 1; y < d.height; y++ {
+			i := y*d.width + x
+			d.spreadFire(i)
+			c := d.firePixels[i]
+			r, g, b, a := rgb[c].RGBA()
+			d.buffer[4*i] = byte(r)
+			d.buffer[4*i+1] = byte(g)
+			d.buffer[4*i+2] = byte(b)
+			d.buffer[4*i+3] = byte(a)
+		}
 	}
-	d.waitGroup.Wait()
 	return nil
 }
 
 // Draw plots the current fire framebuffer.
 func (d *Doom) Draw(screen *ebiten.Image) {
-	pix := make([]byte, d.width*d.height*4)
-	l := d.width * d.height
-	for i := 0; i < l; i++ {
-		c := d.firePixels[i]
-		r, g, b, a := rgb[c].RGBA()
-		pix[4*i] = byte(r)
-		pix[4*i+1] = byte(g)
-		pix[4*i+2] = byte(b)
-		pix[4*i+3] = byte(a)
-	}
-	screen.ReplacePixels(pix)
+	screen.ReplacePixels(d.buffer)
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %f\n", ebiten.CurrentTPS()))
 }
 
 // Layout takes the outside size (e.g., the window size) and returns the (logical) screen size.
@@ -121,7 +116,6 @@ func (d *Doom) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func main() {
 	ebiten.SetWindowTitle("DOOM")
-	ebiten.SetMaxTPS(ebiten.UncappedTPS)
 	d := NewDoom(600, 400)
 
 	if err := ebiten.RunGame(d); err != nil {

@@ -110,7 +110,7 @@ func (d *Doom) Draw(screen *ebiten.Image) {
 }
 
 // Layout takes the outside size (e.g., the window size) and returns the (logical) screen size.
-func (d *Doom) Layout(outsideWidth, outsideHeight int) (int, int) {
+func (d *Doom) Layout(_, _ int) (int, int) {
 	return d.width, d.height
 }
 

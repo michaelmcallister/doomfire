@@ -60,6 +60,13 @@ var (
 	heightFlag = flag.Int("height", 400, "height (in pixels)")
 )
 
+type direction int
+
+const (
+	left direction = iota
+	right
+)
+
 // Doom implements the ebiten.Game interface.
 type Doom struct {
 	width, height int
@@ -100,6 +107,26 @@ func (d *Doom) spreadFire(src int) {
 	}
 }
 
+func (d *Doom) addWind(dir direction) {
+	switch dir {
+	case left:
+		for x := d.width - 50; x < d.width; x++ {
+			for y := d.height; y > d.height/4; y-- {
+				fmt.Println("y: ", y)
+				dst := y*d.width + x
+				if dst > len(d.firePixels) {
+					continue
+				}
+				if d.firePixels[dst] != 0 {
+					d.firePixels[y*d.width+x] = 3
+				}
+			}
+		}
+	case right:
+		fmt.Println("right")
+	}
+}
+
 // Update applies the fire spread on each frame.
 func (d *Doom) Update() error {
 	for x := 0; x < d.width; x++ {
@@ -123,6 +150,13 @@ func (d *Doom) Update() error {
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
 		os.Exit(0)
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
+		d.addWind(left)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyRight) {
+		d.addWind(right)
 	}
 
 	return nil
@@ -155,7 +189,7 @@ func main() {
 	flag.Parse()
 	ebiten.SetWindowTitle("DOOM")
 	ebiten.SetMaxTPS(ebiten.UncappedTPS)
-	ebiten.SetWindowSize(*widthFlag*2, *heightFlag*2)
+	ebiten.SetWindowSize(*widthFlag, *heightFlag)
 	d := NewDoom(*widthFlag, *heightFlag)
 
 	if err := ebiten.RunGame(d); err != nil {
